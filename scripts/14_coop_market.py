@@ -3,6 +3,7 @@
   python 14_coop_market.py collect   # app ids via store search, details via IStoreBrowseService
   python 14_coop_market.py analyze   # tag and direction uplift -> data/coop_tags.csv, data/coop_directions.csv
   python 14_coop_market.py near      # same directions inside co-op games about animals / nature / hunting
+  python 14_coop_market.py small     # directions among small-scope co-op games (no big-production tags)
 
 Base: co-op games (tags Co-op / Online Co-Op / Local Co-Op), released 2022-01-01 .. 12 months
 before the data date (so every game had a year to collect reviews), paid, not AAA.
@@ -338,15 +339,67 @@ def export_near(near, base, out):
                 ws.cell(1, i).font = Font(bold=True)
 
 
+# tags that usually mean a big production: removing them leaves what a small team can make
+BIG_SCOPE = {"Crafting", "Base Building", "Open World Survival Craft", "Building", "Sandbox",
+             "Open World", "Management", "Simulation", "RPG", "Massively Multiplayer",
+             "Automation", "Strategy"}
+SMALL_CHECKS = [
+    ("Психологический хоррор", lambda s: "Psychological Horror" in s),
+    ("Хоррор (любой)", lambda s: bool(s & {"Horror", "Psychological Horror", "Survival Horror"})),
+    ("Онлайн-кооп как основа", lambda s: "Online Co-Op" in s),
+    ("Стелс", lambda s: "Stealth" in s),
+    ("Выживание + онлайн-кооп", lambda s: "Survival" in s and "Online Co-Op" in s),
+    ("Выживание (без онлайна в топе)", lambda s: "Survival" in s and "Online Co-Op" not in s),
+    ("Вид от первого лица", lambda s: "First-Person" in s),
+    ("Вид от третьего лица", lambda s: "Third Person" in s),
+    ("Реалистичный стиль", lambda s: "Realistic" in s),
+    ("Физика", lambda s: "Physics" in s),
+    ("Смешное / комедия", lambda s: bool(s & {"Funny", "Comedy", "Memes", "Dark Comedy"})),
+    ("Природа / животные / охота", lambda s: bool(s & THEME)),
+    ("Экшен", lambda s: "Action" in s),
+    ("Шутер", lambda s: bool(s & {"Shooter", "FPS", "Third-Person Shooter"})),
+    ("Рогалик", lambda s: bool(s & {"Roguelite", "Roguelike", "Action Roguelike"})),
+    ("Пати-игра", lambda s: bool(s & {"Party Game", "Party"})),
+    ("Локальный кооп", lambda s: bool(s & {"Local Co-Op", "Split Screen"})),
+    ("Милое / мультяшное / стилизация", lambda s: bool(s & {"Cute", "Cartoony", "Stylized"})),
+    ("Казуальное", lambda s: "Casual" in s),
+    ("Пиксель-арт / 2D", lambda s: bool(s & {"Pixel Graphics", "2D"})),
+]
+
+
+def cmd_small(args):
+    """Directions within co-op games a small team can make (no big-production tags in the top 10)."""
+    df, base = load_base()
+    small = base[base.top_tags.apply(lambda s: not (s & BIG_SCOPE))]
+    k = int((small.reviews >= 100).sum())
+    print(f"small-scope co-op games: {len(small)} of {len(base)}; 100+ = {rate(small)}%, 1000+ = {rate(small, thr=1000)}%")
+    rows = []
+    for label, f in SMALL_CHECKS:
+        g = small[small.top_tags.apply(f)]
+        lo, hi = wilson(int((g.reviews >= 100).sum()), len(g))
+        e, l = g[g.period == "2022–23"], g[g.period == "2024–25"]
+        verdict = ("уверенно выше" if lo is not None and lo > rate(small) else
+                   "уверенно ниже" if hi is not None and hi < rate(small) else "неясно")
+        rows.append({"direction": label, "games": len(g), "pct_100plus": rate(g), "ci_low": lo, "ci_high": hi,
+                     "vs_small_average": verdict, "pct_1000plus": rate(g, thr=1000),
+                     "pct_100plus_2022_23": rate(e), "pct_100plus_2024_25": rate(l),
+                     "examples_top": "; ".join(g.sort_values("reviews", ascending=False).name.head(5))})
+    out = pd.DataFrame(rows).sort_values("pct_100plus", ascending=False)
+    out.to_csv(DATA / "coop_small_scope.csv", index=False)
+    with pd.option_context("display.width", 250, "display.max_colwidth", 70):
+        print(out.to_string(index=False))
+
+
 def main():
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("collect")
     sub.add_parser("analyze")
+    sub.add_parser("small")
     n = sub.add_parser("near")
     n.add_argument("--min-games", type=int, default=10)
     args = p.parse_args()
-    {"collect": cmd_collect, "analyze": cmd_analyze, "near": cmd_near}[args.cmd](args)
+    {"collect": cmd_collect, "analyze": cmd_analyze, "near": cmd_near, "small": cmd_small}[args.cmd](args)
 
 
 if __name__ == "__main__":
