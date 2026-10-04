@@ -18,6 +18,11 @@ python 03_fetch_prices.py     # базовые цены
 python 04_build_dataset.py    # data/games.csv
 python 05_segment_map.py      # data/segments.csv
 python 06_export_review.py    # data/games_review.xlsx
+python 07_audience_overlap.py estimate   # сколько запросов нужно
+python 07_audience_overlap.py collect    # авторы отзывов (~30–60 мин, можно прерывать)
+python 07_audience_overlap.py analyze    # data/audience_overlap.csv, data/audience_affinity.csv
 ```
+
+Проверка математики пересечений: `python tests/test_overlap.py`.
 
 Настройки (теги, определения элементов, список AAA-издателей) — `scripts/config.py`.

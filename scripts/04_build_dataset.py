@@ -26,7 +26,12 @@ def release_year(text):
 
 
 def main():
-    recs = [json.loads(l) for l in (RAW / "app_details.jsonl").open(encoding="utf-8")]
+    recs = []
+    for line in (RAW / "app_details.jsonl").open(encoding="utf-8"):
+        try:
+            recs.append(json.loads(line))
+        except json.JSONDecodeError:  # last line may be half-written while 02 runs
+            pass
     recs = [r for r in recs if "error" not in r]
     hits = pd.read_csv(RAW / "search_hits.csv")
     seeds = hits.groupby("appid").seed.apply(lambda s: ",".join(sorted(set(s))))
