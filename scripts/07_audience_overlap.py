@@ -62,15 +62,16 @@ def pages_needed(reviews, cap):
 def fetch_page(appid, cursor):
     params = {"json": 1, "num_per_page": PAGE, "language": "all", "purchase_type": "all",
               "filter": "recent", "cursor": cursor}
-    for attempt in range(8):
+    for attempt in range(10):
         try:
             r = _session.get(f"https://store.steampowered.com/appreviews/{appid}",
                              params=params, timeout=60)
             if r.status_code == 200:
                 return r.json()
-            time.sleep(10 * (attempt + 1))  # 429 / 5xx
         except (requests.RequestException, ValueError):
-            time.sleep(5 * (attempt + 1))
+            pass
+        # Steam answers 429 to ~1 request in 40: short exponential backoff, capped at 1 min
+        time.sleep(min(60, 2 ** attempt))
     return None
 
 
