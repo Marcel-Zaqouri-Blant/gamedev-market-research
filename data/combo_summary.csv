@@ -1,0 +1,27 @@
+combo,n_elements,games_2022plus,pct_100plus_2022plus,pct_1000plus_2022plus,median_reviews_2022plus,pct_100plus_2022_23,games_2022_23,pct_100plus_2024_25,games_2024_25,trend,top3_share_of_reviews,reviews_without_top3,top3,announced_2026_27,games_all_since_2019
+собака,1,618,16.3,3.6,12.0,25.3,162,15.9,246,падает,29.8,75717,Wobbledogs (15412); Enigma of Fear (10365); Beast of Reincarnation (6310),87,755
+охота,1,394,21.1,7.4,11.0,19.4,124,27.6,156,растёт,63.1,115896,"SCUM (127253); Ranch Simulator: Build, Hunt, Farm (48729); Soulmask (22529)",80,501
+собака + охота,2,13,30.8,15.4,8.0,40.0,5,25.0,4,мало данных,89.5,415,Way of the Hunter 2 (1811); Ice World (1267); Adore (458),3,16
+собака + кооп,2,37,32.4,10.8,45.0,41.7,12,30.8,13,падает,64.7,4270,Pratfall (3461); Arctico (2555); Way of the Hunter 2 (1811),14,49
+собака + френдслоп,2,5,40.0,20.0,96.0,,0,50.0,2,мало данных,97.5,99,Pratfall (3461); NiuMa (372); Burgle Supply Company (96),4,8
+собака + хоррор,2,57,26.3,8.8,38.0,44.4,18,20.8,24,падает,68.1,6349,Enigma of Fear (10365); POPGOES Arcade (1914); Ice World (1267),7,71
+собака + рогалик,2,54,20.4,3.7,15.5,42.9,7,8.7,23,мало данных для тренда,62.9,3360,Pratfall (3461); Batomon Showdown (1328); Dogpile (900),5,60
+охота + кооп,2,49,40.8,22.4,81.0,50.0,10,55.6,18,стабильно,80.2,49144,"SCUM (127253); Ranch Simulator: Build, Hunt, Farm (48729); Soulmask (22529)",23,64
+охота + френдслоп,2,9,0.0,0.0,40.0,0.0,1,0.0,2,мало данных,60.5,167,Park Ranger Simulator (89); Huntin' Buddies (86); Hazard Levels (81),5,11
+охота + хоррор,2,93,25.8,10.8,16.0,29.2,24,26.8,41,стабильно,30.0,17196,IfSunSets (2509); Save Room - Organization Puzzle (2494); Squirrel Stapler (2378),20,117
+охота + рогалик,2,41,19.5,4.9,20.0,14.3,14,33.3,15,растёт,71.0,1726,Multiverse Loot Hunter (2700); Card Survival: Fantasy Forest (1182); Legends of Wasteland (337),3,49
+собака + охота + кооп,3,1,100.0,100.0,1811.0,,0,,0,мало данных,100.0,0,Way of the Hunter 2 (1811),1,1
+собака + охота + хоррор,3,2,50.0,50.0,634.5,,0,50.0,2,мало данных,100.0,0,Ice World (1267); Putrid Beasts (2),0,2
+собака + охота + рогалик,3,0,,,,,0,,0,мало данных,,0,,0,1
+собака + кооп + френдслоп,3,5,40.0,20.0,96.0,,0,50.0,2,мало данных,97.5,99,Pratfall (3461); NiuMa (372); Burgle Supply Company (96),4,8
+собака + кооп + хоррор,3,6,0.0,0.0,36.0,0.0,1,0.0,3,мало данных,83.7,40,Burgle Supply Company (96); Nekotype Keyboard Cat Simulator (61); HOUND: AUTOMATON (48),3,7
+собака + кооп + рогалик,3,4,50.0,25.0,104.5,,0,50.0,2,мало данных,99.9,5,Pratfall (3461); Flock of Dogs (113); Burgle Supply Company (96),1,4
+собака + френдслоп + хоррор,3,2,0.0,0.0,78.5,,0,,0,мало данных,100.0,0,Burgle Supply Company (96); Nekotype Keyboard Cat Simulator (61),1,2
+собака + френдслоп + рогалик,3,2,50.0,50.0,1778.5,,0,,0,мало данных,100.0,0,Pratfall (3461); Burgle Supply Company (96),0,2
+собака + хоррор + рогалик,3,5,40.0,0.0,96.0,50.0,2,0.0,1,мало данных,97.8,18,Fright Train (420); Anglerfish (290); Burgle Supply Company (96),0,5
+охота + кооп + френдслоп,3,9,0.0,0.0,40.0,0.0,1,0.0,2,мало данных,60.5,167,Park Ranger Simulator (89); Huntin' Buddies (86); Hazard Levels (81),5,11
+охота + кооп + хоррор,3,18,27.8,16.7,54.0,25.0,4,50.0,6,мало данных для тренда,78.7,1590,IfSunSets (2509); Paranoia Place: Escape Together (1854); Folklore Hunter (1503),5,24
+охота + кооп + рогалик,3,4,25.0,0.0,83.5,100.0,1,,0,мало данных,98.2,6,Bound By Blades (155); Huntin' Buddies (86); Hazard Levels (81),0,4
+охота + френдслоп + хоррор,3,6,0.0,0.0,50.0,0.0,1,0.0,1,мало данных,82.8,49,Huntin' Buddies (86); Hazard Levels (81); BigFool (69),1,7
+охота + френдслоп + рогалик,3,2,0.0,0.0,83.5,,0,,0,мало данных,100.0,0,Huntin' Buddies (86); Hazard Levels (81),0,2
+охота + хоррор + рогалик,3,6,0.0,0.0,53.5,,0,0.0,3,мало данных,79.9,60,Huntin' Buddies (86); Hazard Levels (81); Harvest Hunt (72),0,7
