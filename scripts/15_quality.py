@@ -223,7 +223,7 @@ def load_joined():
     revs = {json.loads(l)["appid"]: json.loads(l) for l in REVS.open()} if REVS.exists() else {}
     prices = pd.read_csv(PRICES) if PRICES.exists() else pd.DataFrame(columns=["appid", "price_usd"])
     df = small.merge(pages, on="appid", how="left").merge(prices, on="appid", how="left")
-    df["release_ts"] = df.date.astype("int64") // 10 ** 9
+    df["release_ts"] = (df.date - pd.Timestamp("1970-01-01")).dt.total_seconds().astype("int64")
     df["longevity_pct"] = [longevity(revs.get(a, {}).get("hist"), ts) for a, ts in zip(df.appid, df.release_ts)]
     df["playtime_median_h"] = [float(np.median(revs[a]["playtime_h"])) if revs.get(a, {}).get("playtime_h") else None
                                for a in df.appid]
@@ -303,8 +303,87 @@ def cmd_analyze(args):
     pl = pd.DataFrame(pl)
     pl.to_csv(DATA / "quality_players.csv", index=False)
     df.drop(columns=["languages", "top_tags", "all_tags"]).to_csv(DATA / "quality_games.csv", index=False)
+    comps = build_comps(df)
+    export(q, pr, pl, comps, df)
     with pd.option_context("display.width", 250, "display.max_colwidth", 80):
         print(q.to_string(index=False)); print(); print(pr.to_string(index=False)); print(); print(pl.to_string(index=False))
+
+
+TENSION = {"Stealth", "Survival", "Horror", "Psychological Horror", "Survival Horror"}
+
+
+def build_comps(df):
+    """Mid-market references for the recommended direction: online co-op + tension or nature theme."""
+    f = df[df.top_tags.apply(lambda s: "Online Co-Op" in s)
+           & (df.top_tags.apply(lambda s: bool(s & TENSION)) | df.all_tags.apply(lambda s: bool(s & cm.THEME)))
+           & df.reviews.between(200, 20_000)].copy()
+    f["themed"] = f.all_tags.apply(lambda s: bool(s & cm.THEME))
+    f["sales_low"], f["sales_high"] = f.reviews * 20, f.reviews * 60
+    f["url"] = "https://store.steampowered.com/app/" + f.appid.astype(str) + "/"
+    f["tags10"] = f.tags.apply(lambda t: ", ".join(t[:10]))
+    f["year"] = f.date.dt.year
+    # all themed games plus the strongest tension games, 30 rows in total
+    themed = f[f.themed].sort_values("reviews", ascending=False)
+    rest = f[~f.themed].sort_values("reviews", ascending=False).head(max(0, 30 - len(themed)))
+    out = pd.concat([themed, rest]).sort_values("reviews", ascending=False)
+    cols = ["name", "year", "price_usd", "reviews", "positive_pct", "sales_low", "sales_high",
+            "playtime_median_h", "longevity_pct", "max_players", "early_access", "themed", "tags10", "url"]
+    if "views_per_review" in out:
+        cols.insert(10, "views_per_review")
+    out[cols].to_csv(DATA / "quality_comps.csv", index=False)
+    return out[cols]
+
+
+def export(q, pr, pl, comps, df):
+    from openpyxl.styles import Font
+    from openpyxl.utils import get_column_letter
+    legend = pd.DataFrame([
+        ("Выборка", f"«Небольшие» кооп-игры Steam 2022 – 2025 (без тегов крафта, строительства, открытого мира, "
+                    f"симуляторов, RPG, стратегий, MMO среди главных), платные, без AAA: {len(df)} игр, "
+                    f"из них 100+ отзывов у {int((df.reviews >= 100).sum())}."),
+        ("Долгоиграемость", "Какая доля отзывов первого года пришла после первых 3 месяцев. "
+                            "Выше = игра продаётся дольше, а не сгорает на старте."),
+        ("Игровое время", "Медиана часов в игре у 100 последних авторов отзывов (медиана по играм направления)."),
+        ("Просмотры на отзыв", "Просмотры 50 самых популярных роликов YouTube об игре ÷ число отзывов в Steam. "
+                               "Сколько бесплатного охвата приходится на одну продажу. Посчитано для 46 игр "
+                               "(лимит YouTube), поэтому это ориентир."),
+        ("Языки", "Языки отзывов у тех же 100 авторов — где живут игроки."),
+        ("Цена", "Базовая цена в долларах без скидки."),
+        ("Игроки", "Максимальное число игроков из описания игры в Steam («up to 4 players», «1–6 players»). "
+                   "«не указано» — в описании нет числа."),
+        ("Продажи ≈", "Отзывы × 20 … × 60."),
+    ], columns=["Что", "Пояснение"])
+    qn = q.rename(columns={"direction": "Направление", "games_100plus": "Игр со 100+",
+                           "longevity_median_pct": "Долгоиграемость, %", "playtime_median_h": "Игровое время, ч",
+                           "views_per_review_median": "Просмотры на отзыв", "youtube_games": "Игр с YouTube",
+                           "english_pct": "Английский, %", "top_languages": "Главные языки",
+                           "median_price": "Медианная цена, $"})
+    prn = pr.rename(columns={"price": "Цена", "games": "Игр", "pct_100plus": "Набрали 100+, %",
+                             "ci_low": "Интервал от", "ci_high": "Интервал до", "pct_1000plus": "Набрали 1000+, %",
+                             "median_reviews": "Медиана отзывов"})
+    pln = pl.rename(columns={"players": "Игроков", "games": "Игр", "pct_100plus": "Набрали 100+, %",
+                             "ci_low": "Интервал от", "ci_high": "Интервал до", "pct_1000plus": "Набрали 1000+, %",
+                             "online_coop_pct": "С онлайн-коопом, %", "examples": "Примеры"})
+    cn = comps.rename(columns={"name": "Игра", "year": "Год", "price_usd": "Цена, $", "reviews": "Отзывы",
+                               "positive_pct": "% положит.", "sales_low": "Продажи ≈ от", "sales_high": "Продажи ≈ до",
+                               "playtime_median_h": "Игровое время, ч", "longevity_pct": "Долгоиграемость, %",
+                               "max_players": "Игроков", "views_per_review": "Просмотры на отзыв",
+                               "early_access": "Ранний доступ", "themed": "Природа / животные / охота",
+                               "tags10": "Главные теги", "url": "Ссылка"})
+    for c in ("Ранний доступ", "Природа / животные / охота"):
+        cn[c] = cn[c].map({True: "да", False: ""})
+    with pd.ExcelWriter(DATA / "quality.xlsx", engine="openpyxl") as w:
+        for name, d, widths in (("Пояснения", legend, {"Что": 20, "Пояснение": 130}),
+                                ("Качество успеха", qn, {"Направление": 30, "Главные языки": 70}),
+                                ("Цена", prn, {}), ("Игроки", pln, {"Примеры": 80}),
+                                ("Ориентиры", cn, {"Игра": 36, "Главные теги": 80, "Ссылка": 45})):
+            d.to_excel(w, sheet_name=name, index=False)
+            ws = w.sheets[name]
+            ws.freeze_panes = "B2"
+            ws.auto_filter.ref = ws.dimensions
+            for i, c in enumerate(d.columns, 1):
+                ws.column_dimensions[get_column_letter(i)].width = widths.get(c, 14)
+                ws.cell(1, i).font = Font(bold=True)
 
 
 def main():
