@@ -5,3 +5,4 @@ data/raw/reviewers/
 data/raw/overlap_collect.log
 data/raw/youtube/
 data/raw/profiles/
+data/raw/*.log
