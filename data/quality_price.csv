@@ -1,6 +1,6 @@
-price,games,pct_100plus,ci_low,ci_high,pct_1000plus,median_reviews
-до $5,792,10.5,8.5,12.8,2.7,5.0
-$5–9.99,629,21.8,18.7,25.2,6.2,15.0
-$10–14.99,260,31.2,25.8,37.0,8.1,37.5
-$15–19.99,160,50.0,42.3,57.7,16.2,101.5
-$20+,146,58.9,50.8,66.6,34.2,197.5
+price,games,pct_100plus,ci_low,ci_high,pct_1000plus,median_reviews,examples
+до $5,792,10.5,8.5,12.8,2.7,5.0,Vampire Survivors; Brotato; WEBFISHING; Mage Arena
+$5–9.99,629,21.8,18.7,25.2,6.2,15.0,Lethal Company; R.E.P.O.; PEAK; Content Warning
+$10–14.99,260,31.2,25.8,37.0,8.1,37.5,The Texas Chain Saw Massacre; Ghost Watchers; Rabbit and Steel; FOREWARNED
+$15–19.99,160,50.0,42.3,57.7,16.2,101.5,Party Animals; Demonologist; We Were Here Forever; Jump Space
+$20+,146,58.9,50.8,66.6,34.2,197.5,"Ready or Not; Warhammer 40,000: Space Marine 2; Warhammer 40,000: Darktide; The Outlast Trials"

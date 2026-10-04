@@ -12,6 +12,8 @@
   таблицы — `data/profiles.xlsx`
 - **Какие направления выигрывают в коопе (17 тыс. кооп-игр):**
   [docs/findings_coop_directions.md](docs/findings_coop_directions.md), таблицы — `data/coop_directions.xlsx`
+- **Качество успеха, цена, игроки, ориентиры, конкуренты:** [docs/findings_quality.md](docs/findings_quality.md),
+  таблицы — `data/quality.xlsx`, `data/competitors.xlsx`
 - **Динамика сочетаний с собакой и охотой:** `docs/combos_overview.html`
   (интерактивная страница), данные — `data/combo_summary.csv`, `data/combo_dynamics.csv`
 
@@ -57,6 +59,11 @@ python 13_export_profiles.py    # data/profiles.xlsx
 python 14_coop_market.py collect   # все кооп-игры Steam (~10 мин)
 python 14_coop_market.py analyze   # data/coop_directions.xlsx
 python 14_coop_market.py near      # то же на играх про животных и охоту: data/coop_near.xlsx
+python 14_coop_market.py small     # недорогие направления: data/coop_small_scope.csv
+python 15_quality.py collect       # цены, страницы, выборки отзывов (~15 мин)
+python 15_quality.py youtube       # просмотры YouTube (квота!)
+python 15_quality.py analyze       # data/quality.xlsx
+python 16_competitors.py           # анонсы-конкуренты: data/competitors.xlsx
 ```
 
 Проверка математики пересечений: `python tests/test_overlap.py`.

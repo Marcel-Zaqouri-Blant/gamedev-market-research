@@ -279,32 +279,35 @@ def cmd_analyze(args):
     q = q.sort_values("o").drop(columns="o")
     q.to_csv(DATA / "quality_directions.csv", index=False)
 
-    # 2. price
+    # 2. price and 3. players: for all small-scope co-op and within online co-op only
+    # (2-player games are mostly local co-op, which would otherwise mix two effects)
     df["price_bucket"] = df.price_usd.apply(price_bucket)
-    pr = []
-    for b in ["до $5", "$5–9.99", "$10–14.99", "$15–19.99", "$20+"]:
-        g = df[df.price_bucket == b]
-        lo, hi = cm.wilson(int((g.reviews >= 100).sum()), len(g))
-        pr.append({"price": b, "games": len(g), "pct_100plus": cm.rate(g), "ci_low": lo, "ci_high": hi,
-                   "pct_1000plus": cm.rate(g, thr=1000), "median_reviews": g.reviews.median()})
-    pr = pd.DataFrame(pr)
-    pr.to_csv(DATA / "quality_price.csv", index=False)
-
-    # 3. players
     df["players_bucket"] = df.max_players.apply(players_bucket)
-    pl = []
-    for b in ["2", "3–4", "5–8", "9+", "не указано"]:
-        g = df[df.players_bucket == b]
-        lo, hi = cm.wilson(int((g.reviews >= 100).sum()), len(g))
-        online = g.top_tags.apply(lambda s: "Online Co-Op" in s).mean() * 100 if len(g) else None
-        pl.append({"players": b, "games": len(g), "pct_100plus": cm.rate(g), "ci_low": lo, "ci_high": hi,
-                   "pct_1000plus": cm.rate(g, thr=1000), "online_coop_pct": round(online, 0) if online is not None else None,
-                   "examples": "; ".join(g.sort_values("reviews", ascending=False).name.head(4))})
-    pl = pd.DataFrame(pl)
+    online = df[df.top_tags.apply(lambda s: "Online Co-Op" in s)]
+
+    def buckets(d, col, order, label):
+        out = []
+        for b in order:
+            g = d[d[col] == b]
+            lo, hi = cm.wilson(int((g.reviews >= 100).sum()), len(g))
+            out.append({label: b, "games": len(g), "pct_100plus": cm.rate(g), "ci_low": lo, "ci_high": hi,
+                        "pct_1000plus": cm.rate(g, thr=1000), "median_reviews": g.reviews.median(),
+                        "examples": "; ".join(g.sort_values("reviews", ascending=False).name.head(4))})
+        return pd.DataFrame(out)
+
+    prices = ["до $5", "$5–9.99", "$10–14.99", "$15–19.99", "$20+"]
+    players = ["2", "3–4", "5–8", "9+", "не указано"]
+    pr = buckets(df, "price_bucket", prices, "price")
+    pl = buckets(df, "players_bucket", players, "players")
+    pr_on = buckets(online, "price_bucket", prices, "price")
+    pl_on = buckets(online, "players_bucket", players, "players")
+    pr.to_csv(DATA / "quality_price.csv", index=False)
     pl.to_csv(DATA / "quality_players.csv", index=False)
+    pr_on.to_csv(DATA / "quality_price_online.csv", index=False)
+    pl_on.to_csv(DATA / "quality_players_online.csv", index=False)
     df.drop(columns=["languages", "top_tags", "all_tags"]).to_csv(DATA / "quality_games.csv", index=False)
     comps = build_comps(df)
-    export(q, pr, pl, comps, df)
+    export(q, pr, pl, comps, df, pr_on, pl_on)
     with pd.option_context("display.width", 250, "display.max_colwidth", 80):
         print(q.to_string(index=False)); print(); print(pr.to_string(index=False)); print(); print(pl.to_string(index=False))
 
@@ -334,7 +337,7 @@ def build_comps(df):
     return out[cols]
 
 
-def export(q, pr, pl, comps, df):
+def export(q, pr, pl, comps, df, pr_on, pl_on):
     from openpyxl.styles import Font
     from openpyxl.utils import get_column_letter
     legend = pd.DataFrame([
@@ -351,6 +354,11 @@ def export(q, pr, pl, comps, df):
         ("Цена", "Базовая цена в долларах без скидки."),
         ("Игроки", "Максимальное число игроков из описания игры в Steam («up to 4 players», «1–6 players»). "
                    "«не указано» — в описании нет числа."),
+        ("Онлайн-кооп / весь кооп", "Цена и игроки посчитаны отдельно для игр с онлайн-коопом среди главных тегов: "
+                                    "двухместные игры в основном локальные, и без этого разреза два эффекта смешиваются."),
+        ("Осторожно: цена", "Дорогие игры обычно и сделаны с большим вложением. Высокая доля успеха у $15+ — "
+                            "не повод поднять цену, а признак того, что такие игры крупнее. Надёжный вывод — "
+                            "дешевле $5 почти никто не взлетает."),
         ("Продажи ≈", "Отзывы × 20 … × 60."),
     ], columns=["Что", "Пояснение"])
     qn = q.rename(columns={"direction": "Направление", "games_100plus": "Игр со 100+",
@@ -358,12 +366,13 @@ def export(q, pr, pl, comps, df):
                            "views_per_review_median": "Просмотры на отзыв", "youtube_games": "Игр с YouTube",
                            "english_pct": "Английский, %", "top_languages": "Главные языки",
                            "median_price": "Медианная цена, $"})
-    prn = pr.rename(columns={"price": "Цена", "games": "Игр", "pct_100plus": "Набрали 100+, %",
-                             "ci_low": "Интервал от", "ci_high": "Интервал до", "pct_1000plus": "Набрали 1000+, %",
-                             "median_reviews": "Медиана отзывов"})
-    pln = pl.rename(columns={"players": "Игроков", "games": "Игр", "pct_100plus": "Набрали 100+, %",
-                             "ci_low": "Интервал от", "ci_high": "Интервал до", "pct_1000plus": "Набрали 1000+, %",
-                             "online_coop_pct": "С онлайн-коопом, %", "examples": "Примеры"})
+    common = {"games": "Игр", "pct_100plus": "Набрали 100+, %", "ci_low": "Интервал от",
+              "ci_high": "Интервал до", "pct_1000plus": "Набрали 1000+, %",
+              "median_reviews": "Медиана отзывов", "examples": "Примеры"}
+    prn = pr.rename(columns={"price": "Цена", **common})
+    pln = pl.rename(columns={"players": "Игроков", **common})
+    prn_on = pr_on.rename(columns={"price": "Цена", **common})
+    pln_on = pl_on.rename(columns={"players": "Игроков", **common})
     cn = comps.rename(columns={"name": "Игра", "year": "Год", "price_usd": "Цена, $", "reviews": "Отзывы",
                                "positive_pct": "% положит.", "sales_low": "Продажи ≈ от", "sales_high": "Продажи ≈ до",
                                "playtime_median_h": "Игровое время, ч", "longevity_pct": "Долгоиграемость, %",
@@ -375,7 +384,10 @@ def export(q, pr, pl, comps, df):
     with pd.ExcelWriter(DATA / "quality.xlsx", engine="openpyxl") as w:
         for name, d, widths in (("Пояснения", legend, {"Что": 20, "Пояснение": 130}),
                                 ("Качество успеха", qn, {"Направление": 30, "Главные языки": 70}),
-                                ("Цена", prn, {}), ("Игроки", pln, {"Примеры": 80}),
+                                ("Цена (онлайн-кооп)", prn_on, {"Примеры": 80}),
+                                ("Игроки (онлайн-кооп)", pln_on, {"Примеры": 80}),
+                                ("Цена (весь кооп)", prn, {"Примеры": 80}),
+                                ("Игроки (весь кооп)", pln, {"Примеры": 80}),
                                 ("Ориентиры", cn, {"Игра": 36, "Главные теги": 80, "Ссылка": 45})):
             d.to_excel(w, sheet_name=name, index=False)
             ws = w.sheets[name]

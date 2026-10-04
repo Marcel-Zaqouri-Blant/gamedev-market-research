@@ -24,6 +24,24 @@ THEME = {"Animals", "Nature", "Hunting", "Dogs", "Wolves", "Fishing"}
 TENSION = {"Stealth", "Survival", "Horror", "Psychological Horror", "Survival Horror"}
 COOP = {"Co-op", "Online Co-Op", "Local Co-Op", "Multiplayer"}
 DATA_DATE = pd.Timestamp("2026-10-04")
+# picked by hand from tiers A–C after reading the descriptions: closest to "dog + hunting + co-op"
+CLOSEST = {
+    "PAWTENTIAL DISASTER": "хаотичный физический кооп за стаю собак",
+    "Salty Dogs": "кооп-отряд вооружённых собак, 2D-экшен",
+    "Quack Hunters": "физический кооп-симулятор охоты на 1–4 игроков с юмором и хоррором",
+    "How to Hunt": "физический кооп-симулятор охоты на 1–4 игроков",
+    "Hunting Simulator 3": "реалистичная охота с собакой, открытый мир",
+    "Man and Dog": "симулятор охоты с собакой, онлайн-кооп",
+    "Ultimate Hunting®": "реалистичная охота, есть собака",
+    "Blue Ridge Hunting": "кооп-хоррор: охота на криптидов",
+    "Meat Safari": "кооп: охота на ингредиенты + готовка, пати",
+    "Fearless Crew": "кооп-охота на монстров с выносом добычи на корабль",
+    "Barely Alive": "кооп-выживание, пати: «охоться на друзей»",
+    "Flow's Island": "кооп-выживание за бродячих зверей",
+    "Dirty Dogs": "социальная дедукция за собак (пати)",
+    "Hide or Seek: Container Island": "прятки: кошки против собак, кооп/PvP",
+    "Fading Day": "кооп-хоррор выживание, есть собака",
+}
 
 
 def get_items(ids):
@@ -99,17 +117,19 @@ def main():
                      "tags": ", ".join(tags[:10]), "short_description": i["short_description"],
                      "url": f"https://store.steampowered.com/app/{a}/"})
     df = pd.DataFrame(rows).sort_values(["tier", "has_date", "release"], ascending=[True, False, True])
+    df["why_close"] = df.name.map(CLOSEST)
     df.to_csv(DATA / "competitors.csv", index=False)
     print(df.groupby("tier").agg(games=("appid", "size"), dated=("has_date", "sum")))
 
     ru = {"tier": "Уровень", "name": "Игра", "release": "Выход", "developers": "Разработчик",
           "publishers": "Издатель", "dog": "Собака", "hunting": "Охота", "online_coop": "Онлайн-кооп",
           "stealth": "Стелс", "horror": "Хоррор", "tags": "Главные теги",
-          "short_description": "Описание", "url": "Ссылка"}
+          "short_description": "Описание", "url": "Ссылка", "why_close": "Чем похожа"}
     legend = pd.DataFrame([
         ("A — прямые", "Анонсы с собакой и охотой, или собакой/охотой и коопом."),
         ("B — тема + формат", "Онлайн-кооп про животных, природу или охоту со стелсом, выживанием или хоррором."),
         ("C — формат", "Онлайн-кооп со стелсом среди главных тегов (будущие R.E.P.O.-подобные)."),
+        ("Ближайшие", "15 анонсов, отобранных вручную по описаниям как самые близкие к «собака + охота + кооп»."),
         ("Даты", "Анонсы без конкретной даты («To be announced», «Coming soon») часто заброшены — "
                  "они в конце каждого листа."),
         ("Данные", f"Steam на {DATA_DATE.date()}. Без AAA. Вишлисты и подписчики Steam не отдаёт."),
@@ -118,6 +138,7 @@ def main():
         sheets = [("Пояснения", legend)] + [
             (name, df[df.tier == t].drop(columns=["tier", "appid", "has_date"]))
             for t, name in (("A", "A — прямые"), ("B", "B — тема + формат"), ("C", "C — формат"))]
+        sheets.insert(1, ("Ближайшие", df[df.why_close.notna()].drop(columns=["appid", "has_date"])))
         for name, d in sheets:
             d = d.rename(columns=ru)
             for c in ("Собака", "Охота", "Онлайн-кооп", "Стелс", "Хоррор"):
@@ -128,7 +149,7 @@ def main():
             ws.freeze_panes = "B2"
             ws.auto_filter.ref = ws.dimensions
             widths = {"Игра": 36, "Описание": 90, "Главные теги": 60, "Ссылка": 45, "Пояснение": 120, "Что": 20,
-                      "Разработчик": 22, "Издатель": 22, "Выход": 16}
+                      "Разработчик": 22, "Издатель": 22, "Выход": 16, "Чем похожа": 50}
             for i, c in enumerate(d.columns, 1):
                 ws.column_dimensions[get_column_letter(i)].width = widths.get(c, 10)
                 ws.cell(1, i).font = Font(bold=True)
