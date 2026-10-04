@@ -1,5 +1,6 @@
 """Step 8: YouTube creators who covered games from both sides of an intersection.
 
+  python 08_creators.py targets                       # pick games from the overlap cache
   python 08_creators.py search --targets data/creator_targets.csv [--budget 9000]
   python 08_creators.py rank   --targets data/creator_targets.csv
 
@@ -22,6 +23,7 @@ import os
 import re
 import unicodedata
 
+import numpy as np
 import pandas as pd
 import requests
 
@@ -130,6 +132,40 @@ def cmd_search(args):
     print(f"videos: {len(vids)}  channels: {len(chans)}  quota used this run: {quota.used}")
 
 
+def cmd_targets(args):
+    """Pick games per intersection: biggest hybrids + side games the crossover audience reviews most."""
+    import importlib
+    ov = importlib.import_module("07_audience_overlap")
+    g = ov.load_games()
+    sets = {a: s for a, s in ov.load_cache(False).items() if a in set(g.appid)}
+    g = g[g.appid.isin(sets)].set_index("appid")
+    members = {s: set(g.index[g[f"el_{s}"]]) for s in ov.SEGMENTS}
+    # small games rarely have YouTube coverage: don't spend search quota on them
+    big = set(g.index[g.reviews_total >= args.min_reviews])
+    rows = []
+    for inter in args.intersections.split(","):
+        a, b = inter.split("+")
+        hybrid = members[a] & members[b]
+        only_a, only_b = members[a] - hybrid, members[b] - hybrid
+        A = ov.union([sets[i] for i in only_a])
+        B = ov.union([sets[i] for i in only_b])
+        cross = np.intersect1d(A, B, assume_unique=True)
+        for i in sorted(hybrid & big, key=lambda i: -g.reviews_total[i])[:args.per_side]:
+            rows.append({"intersection": inter, "side": "hybrid", "appid": i, "name": g.name[i],
+                         "reviews_total": g.reviews_total[i], "crossover_reviewers": None})
+        for side, pool in (("a", only_a), ("b", only_b)):
+            hits = sorted(((ov.count_in(cross, sets[i]), i) for i in pool & big), reverse=True)
+            for n, i in hits[:args.per_side]:
+                if n:
+                    rows.append({"intersection": inter, "side": side, "appid": i, "name": g.name[i],
+                                 "reviews_total": g.reviews_total[i], "crossover_reviewers": n})
+        print(f"{inter}: crossover audience {len(cross)}, hybrid games {len(hybrid)}")
+    out = pd.DataFrame(rows)
+    out.to_csv(args.targets, index=False)
+    print(out.to_string(index=False))
+    print(f"unique games to search: {out.appid.nunique()}  (~{out.appid.nunique() * 100} quota units)")
+
+
 def cmd_rank(args):
     targets = pd.read_csv(args.targets)
     vids = pd.read_csv(DATA / "creator_videos.csv")
@@ -163,6 +199,12 @@ def cmd_rank(args):
 def main():
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
+    t = sub.add_parser("targets")
+    t.add_argument("--targets", default=str(DATA / "creator_targets.csv"))
+    t.add_argument("--intersections",
+                   default="hunting+friendslop,dog+friendslop,dog+hunting,hunting+horror,dog+horror")
+    t.add_argument("--per-side", type=int, default=5)
+    t.add_argument("--min-reviews", type=int, default=200)
     s = sub.add_parser("search")
     s.add_argument("--targets", default=str(DATA / "creator_targets.csv"))
     s.add_argument("--budget", type=int, default=9000, help="max quota units this run")
@@ -170,7 +212,7 @@ def main():
     r.add_argument("--targets", default=str(DATA / "creator_targets.csv"))
     r.add_argument("--top", type=int, default=20)
     args = p.parse_args()
-    {"search": cmd_search, "rank": cmd_rank}[args.cmd](args)
+    {"targets": cmd_targets, "search": cmd_search, "rank": cmd_rank}[args.cmd](args)
 
 
 if __name__ == "__main__":
