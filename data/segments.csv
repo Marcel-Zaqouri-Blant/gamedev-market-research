@@ -1,0 +1,23 @@
+segment,n_elements,games_all_paid,share_100plus_of_all,games,games_recent,games_2024,games_2025,median_reviews,p75_reviews,p90_reviews,share_100plus,share_500plus,share_1000plus,reviews_sum,reviews_sum_wo_top3,top3_share_pct,median_positive_pct,median_price,top3,upcoming
+dog,1,239,43.9,204,48,12,1,108.0,467.25,1794.7000000000025,51.5,23.0,14.2,160563,122613,23.6,86.35,7.99,Wobbledogs (15412); Montaro (12173); Enigma of Fear (10365),41
+hunting,1,203,44.3,159,42,7,10,132.0,714.5,3961.6000000000026,56.6,28.9,22.0,689909,237088,65.6,72.4,9.99,theHunter: Call of the Wild™ (203716); SCUM (127253); The Isle (121852),54
+friendslop,1,410,62.4,375,131,14,20,505.0,6153.0,24347.20000000004,68.3,50.1,42.9,6136173,3774135,38.5,83.7,12.99,Dead by Daylight (937296); Among Us (749767); PAYDAY 2 (674975),82
+extraction,1,8,87.5,8,5,0,1,4194.0,9410.75,93608.59999999995,87.5,87.5,75.0,311787,10469,96.6,74.25,22.49,Hunt: Showdown 1896 (279467); SAND: Raiders of Sophie (13955); Deceive Inc. (7896),5
+dog + hunting,2,5,60.0,5,2,1,0,458.0,1185.0,1877.4,60.0,40.0,40.0,4027,45,98.9,86.2,19.99,The Red Lantern (2339); Hunting Simulator 2 (1185); Adore (458),3
+dog + friendslop,2,3,33.3,3,0,0,0,81.0,777.5,1195.4,33.3,33.3,33.3,1601,0,100.0,76.5,15.99,PHOGS! (1474); Save Your Nuts (81); Higher Critters - 1v4 (46),0
+dog + horror,2,20,80.0,19,5,1,0,318.0,649.0,2533.999999999995,84.2,26.3,15.8,24816,5093,79.5,87.3,5.99,Enigma of Fear (10365); Blair Witch (8254); Duck Season PC (1104),3
+dog + roguelite,2,14,57.1,13,3,1,0,290.0,798.0,2036.600000000001,61.5,30.8,15.4,10003,2352,76.5,81.5,7.99,FATE (4485); The Red Lantern (2339); Space Hack (827),4
+hunting + friendslop,2,5,40.0,4,2,0,0,128.5,1228.75,3123.7000000000007,50.0,25.0,25.0,4657,13,99.7,58.95,7.49,Rake (4387); S.P.A.T. (176); Hazard Levels (81),0
+hunting + horror,2,49,53.1,44,11,1,3,214.0,1161.0,3487.100000000004,59.1,38.6,27.3,194793,28098,85.6,74.95,9.99,The Isle (121852); Depth (32949); Night of the Dead (11894),14
+hunting + roguelite,2,14,50.0,10,4,1,0,120.5,289.25,2291.3,70.0,20.0,20.0,5653,694,87.7,70.4,10.99,The Red Lantern (2339); HellSign (2286); The Rule of Land: Pioneers (334),2
+friendslop + horror,2,44,77.3,43,10,1,2,2097.0,7981.5,28466.60000000003,79.1,65.1,55.8,1770604,220405,87.6,83.1,9.99,Dead by Daylight (937296); Don't Starve Together (543930); Killing Floor (68973),10
+friendslop + roguelite,2,24,70.8,24,12,0,1,599.5,4285.75,26059.6,70.8,54.2,33.3,671944,61012,90.9,87.5,14.99,Don't Starve Together (543930); Clone Drone in the Danger Zone (39683); PlateUp! (27319),7
+horror + extraction,2,3,100.0,3,2,0,1,2952.0,141209.5,224164.0,100.0,100.0,100.0,283580,0,100.0,73.7,19.99,Hunt: Showdown 1896 (279467); Level Zero: Extraction (2952); Hell is Others (1161),1
+roguelite + extraction,2,2,100.0,2,1,0,0,3298.5,4367.25,5008.5,100.0,100.0,100.0,6597,0,100.0,80.35,22.49,Void Bastards (5436); Hell is Others (1161),1
+dog + hunting + roguelite,3,1,100.0,1,0,0,0,2339.0,2339.0,2339.0,100.0,100.0,100.0,2339,0,100.0,80.5,24.99,The Red Lantern (2339),0
+dog + horror + roguelite,3,2,100.0,2,1,0,0,558.5,692.75,773.3,100.0,50.0,0.0,1117,0,100.0,63.900000000000006,7.49,Space Hack (827); Anglerfish (290),0
+hunting + friendslop + horror,3,4,50.0,4,2,0,0,128.5,1228.75,3123.7000000000007,50.0,25.0,25.0,4657,13,99.7,58.95,7.49,Rake (4387); S.P.A.T. (176); Hazard Levels (81),0
+hunting + friendslop + roguelite,3,1,0.0,1,1,0,0,81.0,81.0,81.0,0.0,0.0,0.0,81,0,100.0,67.9,9.99,Hazard Levels (81),0
+hunting + horror + roguelite,3,2,50.0,2,1,0,0,1183.5,1734.75,2065.5,50.0,50.0,50.0,2367,0,100.0,67.7,14.989999999999998,HellSign (2286); Hazard Levels (81),1
+friendslop + horror + roguelite,3,2,50.0,2,1,0,0,272005.5,407967.75,489545.10000000003,50.0,50.0,50.0,544011,0,100.0,81.4,12.49,Don't Starve Together (543930); Hazard Levels (81),1
+horror + roguelite + extraction,3,1,100.0,1,1,0,0,1161.0,1161.0,1161.0,100.0,100.0,100.0,1161,0,100.0,74.8,14.99,Hell is Others (1161),0
