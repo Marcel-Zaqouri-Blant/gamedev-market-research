@@ -10,7 +10,12 @@ from config import DATA
 
 SEG_RU = {"dog": "собака", "hunting": "охота", "friendslop": "френдслоп",
           "horror": "хоррор", "roguelite": "рогалик", "extraction": "экстракшн"}
-SIDE_RU = {"a": "сторона 1", "b": "сторона 2", "hybrid": "гибрид"}
+
+
+def side_label(inter, side):
+    """'a' / 'b' -> name of that element of the intersection, 'hybrid' -> 'гибрид'."""
+    a, b = inter.split("+")
+    return {"a": SEG_RU[a], "b": SEG_RU[b]}.get(side, "гибрид")
 
 
 def ru_pair(s):
@@ -58,7 +63,8 @@ def main():
         ("Данные", "Авторы отзывов Steam: до 500 последних на игру, 2 854 игры, ~489 тыс. человек. "
                    "Исключены 280 аккаунтов с отзывами на 20+ игр выборки (кураторы, сборщики ключей)."),
         ("Блогеры", "YouTube: по 50 самых просматриваемых видео (категория «Игры») на каждую игру. "
-                    "На стыке — канал, снимавший игру-гибрид или игры обеих сторон. "
+                    "На стыке — канал, снимавший игру-гибрид или игры обоих элементов стыка. "
+                    "В скобках у игры — её элемент: например, [охота], [френдслоп] или [гибрид] (оба сразу). "
                     "Официальные каналы и трейлеры исключены."),
     ], columns=["Что", "Пояснение"])
 
@@ -70,18 +76,19 @@ def main():
         write(w, "Пересечения", p, {"Сегмент 1": 13, "Сегмент 2": 13})
         for inter, g in cr.groupby("intersection", sort=False):
             g = g.sort_values("subscribers", ascending=False)
-            games = g.games_covered.str.replace(r"\[a\]", "[сторона 1]", regex=True) \
-                .str.replace(r"\[b\]", "[сторона 2]", regex=True).str.replace("[hybrid]", "[гибрид]", regex=False)
+            games = g.games_covered.str.replace(
+                r"\[(a|b|hybrid)\]", lambda m: f"[{side_label(inter, m.group(1))}]", regex=True)
             out = pd.DataFrame({
                 "Канал": g.channel.values, "Подписчики": g.subscribers.values,
-                "Страна": g.country.fillna("").values, "Игры (сторона стыка)": games.values,
+                "Страна": g.country.fillna("").values, "Игры [элемент]": games.values,
                 "Игр": g.n_games.values, "Просмотры на этих играх": g.views_on_these_games.values,
                 "Лучшее видео": g.top_video.values, "_url": g.url.values,
             })
-            write(w, ru_pair(inter)[:31], out, {"Канал": 30, "Игры (сторона стыка)": 80,
+            write(w, ru_pair(inter)[:31], out, {"Канал": 30, "Игры [элемент]": 80,
                                                  "Лучшее видео": 45, "Просмотры на этих играх": 16})
-        t = targets.assign(intersection=targets.intersection.map(ru_pair), side=targets.side.map(SIDE_RU))
-        t = t.rename(columns={"intersection": "Стык", "side": "Сторона", "name": "Игра",
+        t = targets.assign(side=[side_label(i, sd) for i, sd in zip(targets.intersection, targets.side)])
+        t = t.assign(intersection=t.intersection.map(ru_pair))
+        t = t.rename(columns={"intersection": "Стык", "side": "Элемент", "name": "Игра",
                               "reviews_total": "Отзывов", "crossover_reviewers": "Людей со стыка в выборке",
                               "crossover_est_full": "Оценка людей со стыка"}).drop(columns=["appid"])
         write(w, "Игры для поиска", t, {"Стык": 20, "Игра": 36})
