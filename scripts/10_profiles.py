@@ -1,7 +1,7 @@
 """Step 10: what else people at each intersection review (public Steam profiles).
 
   python 10_profiles.py collect [--per-group 120] [--max-pages 5]
-  python 10_profiles.py tags       # SteamSpy tags for games outside our dataset
+  python 10_profiles.py tags       # Steam store tags for games outside our dataset
   python 10_profiles.py analyze
 
 Groups: for every pair containing dog or hunting, a random sample of crossover
@@ -174,24 +174,31 @@ def game_tags():
 
 
 def cmd_tags(args):
+    """Tags for every game in the profiles that our dataset doesn't cover (Steam store API, 100 per call)."""
     users = load_users()
     counts = pd.Series([r[0] for u in users.values() for r in u.get("reviews", [])]).value_counts()
     known = set(game_tags())
-    todo = [a for a, c in counts.items() if c >= args.min_people and a not in known]
-    print(f"games reviewed by {args.min_people}+ sampled people and missing tags: {len(todo)}")
-    rows = []
-    if TAGS_EXTRA.exists():
-        rows = pd.read_csv(TAGS_EXTRA).to_dict("records")
-    for n, a in enumerate(todo, 1):
-        r = get("https://steamspy.com/api.php", request="appdetails", appid=a)
-        d = r.json() if r is not None else {}
-        rows.append({"appid": a, "name": d.get("name", ""),
-                     "tags": "|".join((d.get("tags") or {}).keys()) if isinstance(d.get("tags"), dict) else ""})
-        time.sleep(1.0)  # SteamSpy asks for <= 1 request per second
-        if n % 100 == 0:
-            pd.DataFrame(rows).to_csv(TAGS_EXTRA, index=False)
-            print(f"{n}/{len(todo)}", flush=True)
-    pd.DataFrame(rows).to_csv(TAGS_EXTRA, index=False)
+    todo = [int(a) for a, c in counts.items() if c >= args.min_people and a not in known]
+    print(f"games in profiles missing tags: {len(todo)}")
+    names = {t["tagid"]: t["name"] for t in
+             get("https://store.steampowered.com/tagdata/populartags/english").json()}
+    rows = pd.read_csv(TAGS_EXTRA).to_dict("records") if TAGS_EXTRA.exists() else []
+    for i in range(0, len(todo), 100):
+        chunk = todo[i:i + 100]
+        req = {"ids": [{"appid": a} for a in chunk],
+               "context": {"language": "english", "country_code": "US"},
+               "data_request": {"include_tag_count": 20}}
+        r = get("https://api.steampowered.com/IStoreBrowseService/GetItems/v1/",
+                input_json=json.dumps(req))
+        items = (r.json().get("response", {}).get("store_items", []) if r is not None else [])
+        for it in items:
+            tagids = [t["tagid"] for t in sorted(it.get("tags", []), key=lambda t: -t.get("weight", 0))]
+            rows.append({"appid": it.get("appid", it.get("id")), "name": it.get("name", ""),
+                         "tags": "|".join(names[t] for t in tagids if t in names)})
+        if (i // 100) % 20 == 0:
+            print(f"{i + len(chunk)}/{len(todo)}", flush=True)
+        time.sleep(0.5)
+    pd.DataFrame(rows).drop_duplicates("appid").to_csv(TAGS_EXTRA, index=False)
     print("done")
 
 
@@ -235,7 +242,9 @@ def cmd_analyze(args):
         public = {a: r for a, r in revs.items() if r}
         n_known = n_total = 0
         el_count = {e: 0 for e in ELEMENTS}
+        el_people = {e: 0 for e in ELEMENTS}  # people with at least one other game of the element
         for a, rs in public.items():
+            has = set()
             for appid, _, _ in rs:
                 n_total += 1
                 e = els(appid)
@@ -244,12 +253,18 @@ def cmd_analyze(args):
                 n_known += 1
                 for k, v in e.items():
                     el_count[k] += v
+                    if v:
+                        has.add(k)
+            for k in has:
+                el_people[k] += 1
         row = {"group": gname, "sampled": len(accs),
                "public_with_reviews": len(public),
                "avg_other_reviews": round(n_total / len(public), 1) if public else None,
                "reviews_with_tags_pct": round(100 * n_known / n_total, 1) if n_total else None}
         for e in ELEMENTS:
             row[f"share_{e}"] = round(100 * el_count[e] / n_known, 1) if n_known else None
+        for e in ELEMENTS:
+            row[f"people_{e}"] = round(100 * el_people[e] / len(public), 1) if public else None
         share_rows.append(row)
         people = pd.Series([appid for rs in public.values() for appid in {r[0] for r in rs}]).value_counts()
         per_group_games[gname] = (people, len(public))
@@ -294,7 +309,7 @@ def main():
     c.add_argument("--workers", type=int, default=2)
     c.add_argument("--rebuild", action="store_true", help="re-sample groups")
     t = sub.add_parser("tags")
-    t.add_argument("--min-people", type=int, default=3)
+    t.add_argument("--min-people", type=int, default=1)
     a = sub.add_parser("analyze")
     a.add_argument("--min-people", type=int, default=5)
     args = p.parse_args()
