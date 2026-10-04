@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 data/raw/fetch.log
 data/raw/reviewers/
+data/raw/overlap_collect.log
