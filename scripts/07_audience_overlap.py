@@ -38,6 +38,8 @@ SEGMENTS = ["dog", "hunting", "friendslop", "horror", "roguelite", "extraction"]
 MIN_REVIEWS = 10      # games with fewer reviews add noise, not signal
 MIN_OBSERVED = 20     # below this the lift is flagged as unreliable
 MIN_PROFILE = 50      # fewer people at an intersection -> no "what else they play" profile
+MAX_GAMES_PER_PERSON = 20  # more reviews in our sample = curator / key farmer, not an audience
+MIN_GAME_REVIEWS_PROFILE = 1000  # small games carry key-giveaway reviews: too noisy for profiles
 
 _lock = threading.Lock()
 _session = requests.Session()
@@ -169,6 +171,15 @@ def load_cache(positive_only):
     return sets
 
 
+def drop_heavy(sets, max_games=MAX_GAMES_PER_PERSON):
+    """Remove accounts that reviewed `max_games`+ games of the sample from every set."""
+    ids, counts = np.unique(np.concatenate(list(sets.values())), return_counts=True)
+    heavy = ids[counts >= max_games]
+    print(f"dropped {len(heavy)} accounts with {max_games}+ reviews in the sample "
+          f"({100 * counts[counts >= max_games].sum() / counts.sum():.1f}% of reviews)")
+    return {a: np.setdiff1d(s, heavy, assume_unique=True) for a, s in sets.items()}
+
+
 def union(arrays):
     return np.unique(np.concatenate(arrays)) if arrays else np.empty(0, np.uint32)
 
@@ -177,7 +188,7 @@ def cmd_analyze(args):
     g = load_games()
     sets = load_cache(args.positive_only)
     g = g[g.appid.isin(sets)]
-    sets = {a: s for a, s in sets.items() if a in set(g.appid)}
+    sets = drop_heavy({a: s for a, s in sets.items() if a in set(g.appid)}, args.max_games_per_person)
     universe = union(list(sets.values()))
     _, per_person = np.unique(np.concatenate(list(sets.values())), return_counts=True)
     print(f"games with reviewers: {len(sets)}  unique reviewers: {len(universe)}  "
@@ -257,8 +268,8 @@ def affinity(target, sets, members, names, reviews):
 
     core = crossover players (reviewed games of every element, games being different)
          ∪ hybrid players (reviewed a game that already has all target elements).
-    Only people who also reviewed something outside the target segments are profiled,
-    and the baseline is everyone who reviewed something outside them.
+    Only people who also reviewed something outside the target segments are profiled;
+    the baseline is everyone with 2+ reviews who reviewed something outside them.
     """
     label = "+".join(target)
     hybrid = set.intersection(*(members[s] for s in target))
@@ -271,6 +282,10 @@ def affinity(target, sets, members, names, reviews):
     core = union([crossover, hybrid_players])
     other = union([sets[i] for i in set(sets) - in_target])
     core_obs = np.intersect1d(core, other, assume_unique=True)
+    # profiled people reviewed 2+ games, so compare them with equally active people:
+    # baseline = everyone with 2+ reviews in the sample who reviewed a non-target game
+    ids, counts = np.unique(np.concatenate(list(sets.values())), return_counts=True)
+    other = np.intersect1d(other, ids[counts >= 2], assume_unique=True)
     print(f"{label}: crossover={len(crossover)} hybrid_games={len(hybrid)} "
           f"hybrid_players={len(hybrid_players)} core_with_other_reviews={len(core_obs)}")
     if len(core_obs) < MIN_PROFILE:
@@ -278,9 +293,11 @@ def affinity(target, sets, members, names, reviews):
         return []
     out = []
     for appid in set(sets) - in_target:
+        if reviews[appid] < MIN_GAME_REVIEWS_PROFILE:
+            continue
         ids = sets[appid]
         hit = count_in(core_obs, ids)
-        if hit < 5:
+        if hit < 10:
             continue
         p_core, p_base = hit / len(core_obs), len(ids) / len(other)
         out.append({"intersection": label, "core_profiled": len(core_obs),
@@ -306,6 +323,7 @@ def main():
     a.add_argument("--targets", default="hunting+friendslop,dog+friendslop,hunting+horror,dog+hunting",
                    help="intersections to profile, comma-separated")
     a.add_argument("--top", type=int, default=25)
+    a.add_argument("--max-games-per-person", type=int, default=MAX_GAMES_PER_PERSON)
     args = p.parse_args()
     {"estimate": cmd_estimate, "collect": cmd_collect, "analyze": cmd_analyze}[args.cmd](args)
 

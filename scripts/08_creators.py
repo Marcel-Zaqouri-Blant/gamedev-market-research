@@ -63,18 +63,26 @@ def call(endpoint, params, quota):
 
 
 def norm(s):
+    s = re.sub(r"[™®©]", "", s)  # before NFKD, which would turn ™ into "TM"
     s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower()
-    s = re.sub(r"[™®©]", "", s)
     return re.sub(r"[^a-z0-9]+", " ", s).strip()
+
+
+def name_variants(game):
+    """Full name plus the part before a subtitle: 'Ranch Simulator: Build, Hunt, Farm'."""
+    full = norm(game)
+    short = norm(re.split(r"\s*[:\-–—|]\s+|:\s*", game)[0])
+    nodots = norm(game.replace(".", ""))  # "R.E.P.O." is usually written "REPO"
+    return {v for v in (full, short, nodots) if len(v) >= 4 or v == full}
 
 
 def mentions(game, title, desc):
     """Video is about the game if its title (or, for long names, description) has the name."""
-    g = norm(game)
     t, d = f" {norm(title)} ", f" {norm(desc)} "
-    if f" {g} " in t:
-        return True
-    return len(g) >= 12 and f" {g} " in d
+    for g in name_variants(game):
+        if f" {g} " in t or (len(g) >= 12 and f" {g} " in d):
+            return True
+    return False
 
 
 def chunks(xs, n=50):
@@ -137,7 +145,7 @@ def cmd_targets(args):
     import importlib
     ov = importlib.import_module("07_audience_overlap")
     g = ov.load_games()
-    sets = {a: s for a, s in ov.load_cache(False).items() if a in set(g.appid)}
+    sets = ov.drop_heavy({a: s for a, s in ov.load_cache(False).items() if a in set(g.appid)})
     g = g[g.appid.isin(sets)].set_index("appid")
     members = {s: set(g.index[g[f"el_{s}"]]) for s in ov.SEGMENTS}
     # small games rarely have YouTube coverage: don't spend search quota on them
@@ -153,12 +161,20 @@ def cmd_targets(args):
         for i in sorted(hybrid & big, key=lambda i: -g.reviews_total[i])[:args.per_side]:
             rows.append({"intersection": inter, "side": "hybrid", "appid": i, "name": g.name[i],
                          "reviews_total": g.reviews_total[i], "crossover_reviewers": None})
+        # side games: the ones with the most crossover players in absolute terms — big
+        # games have the most videos, so creators covering both sides show up.
+        # A hit's 500 sampled reviewers are a tiny slice of its audience, so the raw
+        # count is scaled up to the game's full review count before ranking.
         for side, pool in (("a", only_a), ("b", only_b)):
-            hits = sorted(((ov.count_in(cross, sets[i]), i) for i in pool & big), reverse=True)
-            for n, i in hits[:args.per_side]:
-                if n:
-                    rows.append({"intersection": inter, "side": side, "appid": i, "name": g.name[i],
-                                 "reviews_total": g.reviews_total[i], "crossover_reviewers": n})
+            scored = []
+            for i in pool & big:
+                n = ov.count_in(cross, sets[i])
+                if n >= args.min_crossover and len(sets[i]):
+                    scored.append((n * g.reviews_total[i] / len(sets[i]), n, i))
+            for est, n, i in sorted(scored, reverse=True)[:args.per_side]:
+                rows.append({"intersection": inter, "side": side, "appid": i, "name": g.name[i],
+                             "reviews_total": g.reviews_total[i], "crossover_reviewers": n,
+                             "crossover_est_full": int(est)})
         print(f"{inter}: crossover audience {len(cross)}, hybrid games {len(hybrid)}")
     out = pd.DataFrame(rows)
     out.to_csv(args.targets, index=False)
@@ -205,6 +221,8 @@ def main():
                    default="hunting+friendslop,dog+friendslop,dog+hunting,hunting+horror,dog+horror")
     t.add_argument("--per-side", type=int, default=5)
     t.add_argument("--min-reviews", type=int, default=200)
+    t.add_argument("--min-crossover", type=int, default=3,
+                   help="side game must be reviewed by this many crossover people")
     s = sub.add_parser("search")
     s.add_argument("--targets", default=str(DATA / "creator_targets.csv"))
     s.add_argument("--budget", type=int, default=9000, help="max quota units this run")

@@ -6,6 +6,8 @@
 - Методика: [docs/methodology.md](docs/methodology.md)
 - Данные по играм: `data/games.csv`, для просмотра — `data/games_review.xlsx`
 - Карта сочетаний элементов: `data/segments.csv`
+- **Пересечение аудиторий и блогеры:** [docs/findings_audience.md](docs/findings_audience.md),
+  таблицы — `data/audience_and_creators.xlsx`
 
 ## Как пересобрать данные
 
@@ -26,8 +28,10 @@ python 07_audience_overlap.py analyze    # data/audience_overlap.csv, data/audie
 Блогеры на стыках (нужен `YOUTUBE_API_KEY`, ~100 поисков в сутки по бесплатной квоте):
 
 ```bash
-python 08_creators.py search --targets ../data/creator_targets.csv
-python 08_creators.py rank   --targets ../data/creator_targets.csv   # data/creators.csv
+python 08_creators.py targets   # выбор игр по стыкам из кэша отзывов
+python 08_creators.py search    # поиск видео (кэшируется)
+python 08_creators.py rank      # data/creators.csv
+python 09_export_audience.py    # data/audience_and_creators.xlsx
 ```
 
 Проверка математики пересечений: `python tests/test_overlap.py`.
