@@ -19,7 +19,7 @@ python 04_build_dataset.py    # data/games.csv
 python 05_segment_map.py      # data/segments.csv
 python 06_export_review.py    # data/games_review.xlsx
 python 07_audience_overlap.py estimate   # сколько запросов нужно
-python 07_audience_overlap.py collect    # авторы отзывов (~30–60 мин, можно прерывать)
+python 07_audience_overlap.py collect    # авторы отзывов (~2 ч: Steam держит ~0,7 запроса/с; можно прерывать)
 python 07_audience_overlap.py analyze    # data/audience_overlap.csv, data/audience_affinity.csv
 ```
 

@@ -6,7 +6,7 @@
 
 collect: downloads review authors per game into data/raw/reviewers/ (local cache,
          NOT committed: Steam IDs are personal data). Resumable; at most --cap
-         most recent reviews per game, so a single hit can't dominate a segment.
+         most recent reviews per game (default 500), so a single hit can't dominate a segment.
 analyze: for every pair of segments A, B counts reviewers who reviewed games of
          both. Games that belong to both A and B are dropped from the pair,
          otherwise one hunting-friendslop game would create the overlap by itself.
@@ -294,10 +294,10 @@ def main():
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
     e = sub.add_parser("estimate")
-    e.add_argument("--cap", type=int, default=1000)
+    e.add_argument("--cap", type=int, default=500)
     e.add_argument("--rate", type=float, default=3.0, help="expected requests per second")
     c = sub.add_parser("collect")
-    c.add_argument("--cap", type=int, default=1000)
+    c.add_argument("--cap", type=int, default=500)
     c.add_argument("--workers", type=int, default=4)
     c.add_argument("--limit", type=int)
     c.add_argument("--appids")
