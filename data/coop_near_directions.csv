@@ -1,0 +1,20 @@
+direction,games,pct_100plus,ci_low,ci_high,pct_100plus_without,uplift_100,uplift_100_all_coop,agrees_with_all_coop,pct_1000plus,examples_top
+Реалистичное,16,68.8,44.4,85.8,29.0,2.37,1.4,да,62.5,"SCUM (98668); Ranch Simulator: Build, Hunt, Farm (40969); Farming Simulator 25 (40166); Way of the Hunter (8563)"
+Выживание / крафт,43,53.5,38.9,67.5,27.0,1.98,1.61,да,27.9,SCUM (98668); WolfQuest: Anniversary Edition (11565); Night of the Dead (10390); Longvinter (6952)
+RPG,50,50.0,36.6,63.4,26.9,1.86,1.31,да,24.0,WEBFISHING (57397); FlyKnight Enhanced Edition (10509); Farm Together 2 (4486); Survivalist: Invisible Strain (4029)
+Спорт,14,50.0,26.8,73.2,30.5,1.64,0.72,нет,28.6,Way of the Hunter (8563); Call of the Wild: The Angler™ (6132); Shredders (3831); Ultimate Fishing® Simulator 2 (2084)
+Гонки / транспорт,14,50.0,26.8,73.2,30.5,1.64,1.19,да,21.4,RoadCraft (13591); Railroads Online (5420); Expeditions: A MudRunner Game (3010); Lonely Mountains: Snow Riders (750)
+Песочница / строительство,36,47.2,32.0,63.0,28.9,1.63,2.0,да,30.6,"Ranch Simulator: Build, Hunt, Farm (40969); Farming Simulator 25 (40166); RoadCraft (13591); Night of the Dead (10390)"
+Симулятор,60,43.3,31.6,55.9,27.8,1.56,1.51,да,25.0,"Ranch Simulator: Build, Hunt, Farm (40969); Farming Simulator 25 (40166); RoadCraft (13591); WolfQuest: Anniversary Edition (11565)"
+Открытый мир / исследование,80,42.5,32.3,53.4,26.3,1.62,1.46,да,21.2,"SCUM (98668); Ranch Simulator: Build, Hunt, Farm (40969); WolfQuest: Anniversary Edition (11565); FlyKnight Enhanced Edition (10509)"
+Хоррор,18,38.9,20.3,61.4,31.0,1.25,1.23,да,27.8,Fears to Fathom - Woodbury Getaway (3481); GONE Fishing (3048); IfSunSets (2305); Oh Deer (2128)
+Стратегия / тактика,24,37.5,21.2,57.3,30.9,1.21,1.18,да,16.7,Night of the Dead (10390); Survivalist: Invisible Strain (4029); Wildmender (1800); Spirit of the Island (1193)
+Уютное / милое,113,28.3,20.8,37.2,34.3,0.83,0.64,да,9.7,WEBFISHING (57397); Call of the Wild: The Angler™ (6132); Farm Together 2 (4486); MyVoiceZoo (3389)
+PvP / соревновательное,32,28.1,15.6,45.4,32.1,0.88,0.66,да,9.4,Longvinter (6952); Oh Deer (2128); Lost Rift (1470); Empire of the Ants (932)
+Шутер,20,25.0,11.2,46.9,32.2,0.78,0.94,да,10.0,Way of the Hunter (8563); Lost Rift (1470); Portal Dungeon (995); Taora : Survival (354)
+Смешное / физика,52,25.0,15.2,38.2,33.3,0.75,1.0,нет,11.5,RoadCraft (13591); Railroads Online (5420); Shredders (3831); MyVoiceZoo (3389)
+Экшен / взрывы,82,23.2,15.4,33.4,35.8,0.65,0.78,да,8.5,SCUM (98668); Survivalist: Invisible Strain (4029); Cat Quest III (3124); GONE Fishing (3048)
+Рогалик,16,18.8,6.6,43.0,32.5,0.58,1.11,нет,0.0,Portal Dungeon (995); Starlight Revolver (404); Tallowmere 2: Curse of the Kittens (318); Ultra Mega Cats (70)
+Мультяшное / стилизация,67,16.4,9.4,27.1,37.2,0.44,0.6,да,3.0,MyVoiceZoo (3389); Fae Farm (2744); Tree Simulator 2023 (675); MY LITTLE PONY: A Maretime Bay Adventure (649)
+Платформер,56,16.1,8.7,27.8,36.1,0.45,0.49,да,1.8,CATO: Buttered Cat (2804); Portal Dungeon (995); MY LITTLE PONY: A Maretime Bay Adventure (649); Primal Planet (645)
+Головоломки,36,13.9,6.1,28.7,34.6,0.4,0.71,да,5.6,CATO: Buttered Cat (2804); Paranoia Place: Escape Together (1562); Cats Love Boxes (433); Cats on Duty (144)

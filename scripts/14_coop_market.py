@@ -2,6 +2,7 @@
 
   python 14_coop_market.py collect   # app ids via store search, details via IStoreBrowseService
   python 14_coop_market.py analyze   # tag and direction uplift -> data/coop_tags.csv, data/coop_directions.csv
+  python 14_coop_market.py near      # same directions inside co-op games about animals / nature / hunting
 
 Base: co-op games (tags Co-op / Online Co-Op / Local Co-Op), released 2022-01-01 .. 12 months
 before the data date (so every game had a year to collect reviews), paid, not AAA.
@@ -246,13 +247,106 @@ def export(base, dirs, tags):
                 ws.cell(1, i).font = Font(bold=True)
 
 
+THEME = {"Animals", "Nature", "Hunting", "Dogs", "Cats", "Fishing", "Dinosaurs", "Horses",
+         "Birds", "Wolves", "Sharks", "Zoo"}
+DOG_NAME = re.compile(r"\b(dogs?|pupp(y|ies)|hounds?|doggo|corgis?|retrievers?)\b", re.I)
+
+
+def wilson(k, n, z=1.96):
+    """95% interval for a share, in %. Honest for small n, unlike ± from the normal approximation."""
+    if not n:
+        return None, None
+    p = k / n
+    d = 1 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * ((p * (1 - p) / n + z * z / (4 * n * n)) ** 0.5) / d
+    return round(100 * (c - h), 1), round(100 * (c + h), 1)
+
+
+def cmd_near(args):
+    """Check the co-op direction signal on co-op games about animals, nature and hunting."""
+    df, base = load_base()
+    themed = base.all_tags.apply(lambda s: bool(s & THEME)) | base.name.str.contains(DOG_NAME)
+    near = base[themed]
+    full = pd.read_csv(DATA / "coop_directions.csv").set_index("name")
+    print(f"near-base: {len(near)} co-op games about animals/nature/hunting (of {len(base)}); "
+          f"100+ = {rate(near)}%, 1000+ = {rate(near, thr=1000)}%")
+    rows = []
+    for d, tl in DIRECTIONS.items():
+        if d == "Животные / природа":
+            continue  # that is the theme itself
+        has = near.top_tags.apply(lambda s, tl=set(tl): bool(s & tl))
+        w, wo = near[has], near[~has]
+        if len(w) < args.min_games:
+            continue
+        k = int((w.reviews >= 100).sum())
+        lo, hi = wilson(k, len(w))
+        up = round(rate(w) / rate(wo), 2) if rate(wo) else None
+        fu = full.loc[d, "uplift_100"] if d in full.index else None
+        rows.append({
+            "direction": d, "games": len(w), "pct_100plus": rate(w), "ci_low": lo, "ci_high": hi,
+            "pct_100plus_without": rate(wo), "uplift_100": up,
+            "uplift_100_all_coop": fu,
+            "agrees_with_all_coop": None if up is None or fu is None else
+            ("да" if (up - 1) * (fu - 1) > 0 or abs(up - 1) < 0.1 and abs(fu - 1) < 0.1 else "нет"),
+            "pct_1000plus": rate(w, thr=1000),
+            "examples_top": "; ".join(f"{n} ({r})" for n, r in
+                                      w.sort_values("reviews", ascending=False).head(4)[["name", "reviews"]].values),
+        })
+    out = pd.DataFrame(rows).sort_values("pct_100plus", ascending=False)
+    out.to_csv(DATA / "coop_near_directions.csv", index=False)
+    near.sort_values("reviews", ascending=False)[["appid", "name", "reviews", "positive_pct", "date"]].assign(
+        tags=near.tags.apply(lambda t: ", ".join(t[:10]))).to_csv(DATA / "coop_near_games.csv", index=False)
+    export_near(near, base, out)
+    with pd.option_context("display.width", 250, "display.max_columns", 20, "display.max_colwidth", 80):
+        print(out.to_string(index=False))
+
+
+def export_near(near, base, out):
+    from openpyxl.styles import Font
+    from openpyxl.utils import get_column_letter
+    legend = pd.DataFrame([
+        ("Выборка", f"Кооп-игры из общей базы ({len(base)} игр, 2022 – {MATURE_END.date()}, платные, без AAA), "
+                    f"у которых среди тегов есть животные, природа или охота ({', '.join(sorted(THEME))}), "
+                    f"или собака в названии: {len(near)} игр. 100+ набрали {rate(near)}%, 1000+ — {rate(near, thr=1000)}%."),
+        ("Интервал", "95% интервал для доли 100+ (метод Уилсона). Широкий интервал = мало игр, цифра неустойчива."),
+        ("Совпадает с коопом", "«да», если направление и здесь, и в общем коопе действует в одну сторону "
+                               "(выше или ниже остальных игр)."),
+        ("Спорт", "В «спорт» здесь попали симуляторы охоты и рыбалки (Way of the Hunter, The Angler) — это не спорт в обычном смысле."),
+    ], columns=["Что", "Пояснение"])
+    cols = {"direction": "Направление", "games": "Игр", "pct_100plus": "Набрали 100+, %",
+            "ci_low": "Интервал от, %", "ci_high": "Интервал до, %", "pct_100plus_without": "Без него, %",
+            "uplift_100": "Во сколько раз чаще", "uplift_100_all_coop": "То же во всём коопе",
+            "agrees_with_all_coop": "Совпадает с коопом", "pct_1000plus": "Набрали 1000+, %",
+            "examples_top": "Крупнейшие игры"}
+    games = near.sort_values("reviews", ascending=False).assign(
+        year=near.date.dt.year, tags10=near.tags.apply(lambda t: ", ".join(t[:10])),
+        url="https://store.steampowered.com/app/" + near.appid.astype(str) + "/")[
+        ["name", "year", "reviews", "positive_pct", "tags10", "url"]].rename(columns={
+            "name": "Игра", "year": "Год", "reviews": "Отзывы", "positive_pct": "% положит.",
+            "tags10": "Главные теги", "url": "Ссылка"})
+    with pd.ExcelWriter(DATA / "coop_near.xlsx", engine="openpyxl") as w:
+        for name, df, widths in (("Пояснения", legend, {"Что": 20, "Пояснение": 140}),
+                                 ("Направления", out.rename(columns=cols), {"Направление": 28, "Крупнейшие игры": 80}),
+                                 ("Игры", games, {"Игра": 40, "Главные теги": 90, "Ссылка": 45})):
+            df.to_excel(w, sheet_name=name, index=False)
+            ws = w.sheets[name]
+            ws.freeze_panes = "B2"
+            ws.auto_filter.ref = ws.dimensions
+            for i, c in enumerate(df.columns, 1):
+                ws.column_dimensions[get_column_letter(i)].width = widths.get(c, 13)
+                ws.cell(1, i).font = Font(bold=True)
+
+
 def main():
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("collect")
     sub.add_parser("analyze")
+    n = sub.add_parser("near")
+    n.add_argument("--min-games", type=int, default=10)
     args = p.parse_args()
-    {"collect": cmd_collect, "analyze": cmd_analyze}[args.cmd](args)
+    {"collect": cmd_collect, "analyze": cmd_analyze, "near": cmd_near}[args.cmd](args)
 
 
 if __name__ == "__main__":

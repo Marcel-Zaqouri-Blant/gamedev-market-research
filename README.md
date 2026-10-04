@@ -56,6 +56,7 @@ python 13_export_profiles.py    # data/profiles.xlsx
 ```bash
 python 14_coop_market.py collect   # все кооп-игры Steam (~10 мин)
 python 14_coop_market.py analyze   # data/coop_directions.xlsx
+python 14_coop_market.py near      # то же на играх про животных и охоту: data/coop_near.xlsx
 ```
 
 Проверка математики пересечений: `python tests/test_overlap.py`.
