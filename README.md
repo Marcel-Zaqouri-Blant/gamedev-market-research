@@ -8,6 +8,10 @@
 - Карта сочетаний элементов: `data/segments.csv`
 - **Пересечение аудиторий и блогеры:** [docs/findings_audience.md](docs/findings_audience.md),
   таблицы — `data/audience_and_creators.xlsx`
+- **Кто люди на стыках (открытые профили):** [docs/findings_profiles.md](docs/findings_profiles.md),
+  таблицы — `data/profiles.xlsx`
+- **Динамика сочетаний с собакой и охотой:** `docs/combos_overview.html`
+  (интерактивная страница), данные — `data/combo_summary.csv`, `data/combo_dynamics.csv`
 
 ## Как пересобрать данные
 
@@ -32,6 +36,17 @@ python 08_creators.py targets   # выбор игр по стыкам из кэ�
 python 08_creators.py search    # поиск видео (кэшируется)
 python 08_creators.py rank      # data/creators.csv
 python 09_export_audience.py    # data/audience_and_creators.xlsx
+```
+
+Динамика сочетаний и профили:
+
+```bash
+python 11_combo_dynamics.py     # data/combo_summary.csv, data/combo_dynamics.csv
+python 12_overview_page.py      # docs/combos_overview.html
+python 10_profiles.py collect   # открытые профили людей со стыков (~30 мин)
+python 10_profiles.py tags      # теги игр из профилей
+python 10_profiles.py analyze
+python 13_export_profiles.py    # data/profiles.xlsx
 ```
 
 Проверка математики пересечений: `python tests/test_overlap.py`.
