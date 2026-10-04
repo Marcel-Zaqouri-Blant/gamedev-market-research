@@ -151,8 +151,8 @@ def load_base():
     df["date"] = pd.to_datetime(df.release_ts, unit="s", errors="coerce")
     pubs = df.publishers.apply(lambda p: " | ".join(p).lower()) + " | " + \
         df.developers.apply(lambda p: " | ".join(p).lower())
-    aaa = re.compile(r"(?<![\w])(" + "|".join(re.escape(p) for p in AAA_PUBLISHERS) + r")(?![\w])")
-    df["is_aaa"] = pubs.str.contains(aaa)
+    aaa = r"(?<![\w])(?:" + "|".join(re.escape(p) for p in AAA_PUBLISHERS) + r")(?![\w])"
+    df["is_aaa"] = pubs.str.contains(aaa, regex=True)
     df["top_tags"] = df.tags.apply(lambda t: set(t[:TOP_TAGS]))
     df["all_tags"] = df.tags.apply(set)
     base = df[~df.coming_soon & ~df.is_free & ~df.is_aaa & df.date.notna()
@@ -200,8 +200,50 @@ def cmd_analyze(args):
         drows.append(r)
     dirs = pd.DataFrame(drows).sort_values("pct_100plus", ascending=False)
     dirs.to_csv(DATA / "coop_directions.csv", index=False)
+    export(base, dirs, tags)
     with pd.option_context("display.width", 250, "display.max_columns", 20, "display.max_colwidth", 60):
         print(dirs.drop(columns=["tags", "examples_top"]).to_string(index=False))
+
+
+def export(base, dirs, tags):
+    from openpyxl.styles import Font
+    from openpyxl.utils import get_column_letter
+    cols = {"name": "Направление", "games": "Игр", "pct_100plus": "Набрали 100+, %",
+            "pct_100plus_without": "Без него, %", "uplift_100": "Во сколько раз чаще",
+            "pct_1000plus": "Набрали 1000+, %", "pct_1000plus_without": "1000+ без него, %",
+            "uplift_1000": "1000+: во сколько раз", "median_reviews": "Медиана отзывов",
+            "pct_100plus_2022_23": "100+ в 2022–23, %", "pct_100plus_2024_25": "100+ в 2024–25, %",
+            "share_of_coop_games_2024_25": "Доля кооп-игр 2024–25, %",
+            "examples_top": "Крупнейшие игры", "tags": "Теги"}
+
+    def prep(df, first):
+        out = df[[c for c in cols if c in df.columns]].rename(columns={**cols, "name": first})
+        out.insert(2, "Надёжность", ["мало игр" if n < MIN_GAMES else "" for n in df.games])
+        return out
+
+    legend = pd.DataFrame([
+        ("База", f"Все кооп-игры Steam (теги Co-op / Online Co-Op / Local Co-Op), вышедшие "
+                 f"{START.date()} – {MATURE_END.date()} (у каждой был год на отзывы), платные, без AAA: "
+                 f"{len(base)} игр. В среднем 100+ отзывов набрали {rate(base)}%, 1000+ — {rate(base, thr=1000)}%."),
+        ("Как считается", "Игра относится к направлению, если хотя бы один его тег — среди её 10 главных тегов. "
+                          "«Во сколько раз чаще» = доля 100+ у игр направления ÷ доля 100+ у остальных кооп-игр."),
+        ("Надёжность", f"«мало игр» — меньше {MIN_GAMES} игр, цифра неустойчива."),
+        ("Осторожно: масштаб", "Направления вроде симулятора, выживания и открытого мира обычно требуют "
+                               "большего бюджета, а платформеры и аркады — меньшего. Часть разницы — это разница "
+                               "в масштабе игр, а не только в спросе на направление."),
+        ("Полнота", "Поиск Steam отдал ~93% кооп-игр; для долей это не критично."),
+    ], columns=["Что", "Пояснение"])
+    with pd.ExcelWriter(DATA / "coop_directions.xlsx", engine="openpyxl") as w:
+        for name, df, widths in (("Пояснения", legend, {"Что": 20, "Пояснение": 140}),
+                                 ("Направления", prep(dirs, "Направление"), {"Направление": 28, "Крупнейшие игры": 70, "Теги": 60}),
+                                 ("Все теги", prep(tags, "Тег"), {"Тег": 26, "Крупнейшие игры": 70})):
+            df.to_excel(w, sheet_name=name, index=False)
+            ws = w.sheets[name]
+            ws.freeze_panes = "B2"
+            ws.auto_filter.ref = ws.dimensions
+            for i, c in enumerate(df.columns, 1):
+                ws.column_dimensions[get_column_letter(i)].width = widths.get(c, 13)
+                ws.cell(1, i).font = Font(bold=True)
 
 
 def main():
