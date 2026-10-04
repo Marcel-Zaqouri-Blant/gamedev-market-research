@@ -23,6 +23,13 @@ python 07_audience_overlap.py collect    # авторы отзывов (~30–60
 python 07_audience_overlap.py analyze    # data/audience_overlap.csv, data/audience_affinity.csv
 ```
 
+Блогеры на стыках (нужен `YOUTUBE_API_KEY`, ~100 поисков в сутки по бесплатной квоте):
+
+```bash
+python 08_creators.py search --targets ../data/creator_targets.csv
+python 08_creators.py rank   --targets ../data/creator_targets.csv   # data/creators.csv
+```
+
 Проверка математики пересечений: `python tests/test_overlap.py`.
 
 Настройки (теги, определения элементов, список AAA-издателей) — `scripts/config.py`.
